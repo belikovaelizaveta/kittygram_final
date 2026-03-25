@@ -8,6 +8,21 @@ jobs:
   test_and_build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: kittygram
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -16,6 +31,14 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
+
+      - name: Set environment variables for tests
+        run: |
+          echo "POSTGRES_DB=kittygram" >> $GITHUB_ENV
+          echo "POSTGRES_USER=postgres" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=postgres" >> $GITHUB_ENV
+          echo "DB_HOST=localhost" >> $GITHUB_ENV
+          echo "DB_PORT=5432" >> $GITHUB_ENV
 
       - name: Install ruff
         run: pip install ruff
@@ -26,6 +49,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           cd backend
+          pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run Django tests
